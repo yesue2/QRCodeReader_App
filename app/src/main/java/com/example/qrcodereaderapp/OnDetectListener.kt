@@ -1,5 +1,5 @@
 package com.example.qrcodereaderapp
 
-interface onDetectListener {
+interface OnDetectListener {
     fun onDetect(msg : String)
 }

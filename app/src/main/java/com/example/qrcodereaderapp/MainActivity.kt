@@ -6,11 +6,14 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Toast
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.example.qrcodereaderapp.databinding.ActivityMainBinding
 import com.google.common.util.concurrent.ListenableFuture
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
     // 바인딩 변수 생성
@@ -64,6 +67,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun getImageAnalysis() : ImageAnalysis {
+        val cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+        val imageAnalysis = ImageAnalysis.Builder().build()
+
+        // QRCodeAnalyzer 객체 생성 후 setAnalyzer() 함수의 인수로 넣어줌
+        // object를 통해 OnDetectListener 인터페이스 객체 생성 후 onDetect() 함수를 오버라이드
+        imageAnalysis.setAnalyzer(cameraExecutor, QRCodeAnalyzer(object : OnDetectListener {
+            override fun onDetect(msg: String) {
+                // onDetect() 함수가 QRCodeAnalyzer에서 불렀을 때 행동 정의
+                Toast.makeText(this@MainActivity, "${msg}", Toast.LENGTH_SHORT).show()
+            }
+        }))
+        return imageAnalysis
+    }
     fun startCamera() {
         // cameraProvideFuture에 객체의 참조값 할당
         cameraProvideFuture = ProcessCameraProvider.getInstance(this)
@@ -74,10 +91,12 @@ class MainActivity : AppCompatActivity() {
             val cameraProvider = cameraProvideFuture.get()
             // 미리보기 객체 가져오기
             val preview = getPreview()
+            // 이미지분석 객체 가져오기
+            val imageAnalysis = getImageAnalysis()
             // DEFAULT_BACK_CAMERA(후면 카메라) 선택
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
             // preview(미리보기) 쓰기 선택
-            cameraProvider.bindToLifecycle(this, cameraSelector, preview)
+            cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalysis)
         }, ContextCompat.getMainExecutor(this))
     }
 
