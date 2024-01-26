@@ -58,5 +58,5 @@ dependencies {
     // If you want to additionally use the CameraX View class
     implementation("androidx.camera:camera-view:${camerax_version}")
     // If you want to additionally add CameraX ML Kit Vision Integration
-    implementation("com.goole.mlkit:barcode-scanning:${camerax_version}")
+    implementation("androidx.camera:camera-mlkit-vision:${camerax_version}")
 }

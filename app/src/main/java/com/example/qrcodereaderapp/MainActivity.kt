@@ -1,7 +1,10 @@
 package com.example.qrcodereaderapp
 
+import android.content.Context
+import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.widget.Toast
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -14,6 +17,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding : ActivityMainBinding
     // ListenableFuture형 변수 생성 => ListenableFuture에 태스크가 제대로 끝났을 때 동작 지정 가능
     private lateinit var cameraProvideFuture : ListenableFuture<ProcessCameraProvider>
+    // 태그 기능 코드 => 나중에 권한을 요청한 후 결과를 onRequestPermissionsResult에서 받을 떄 필요
+    // 0과 같거나 큰 양수이기만 하면 어떤 수든 상관없음
+    private val PERMISSIONS_REQUEST_CODE = 1
+    // 카메라 권한 지정
+    private val PERMISSIONS_REQUIRED = arrayOf(android.Manifest.permission.CAMERA)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -22,7 +30,38 @@ class MainActivity : AppCompatActivity() {
         val view = binding.root  // 바인딩 객체의 root 뷰 참조
         setContentView(view)  // 생성한 뷰 설정
 
-        startCamera()
+        if (!hasPermissions(this)) {  // 권한이 없을 때
+            // 카메라 권한 요청
+            requestPermissions(PERMISSIONS_REQUIRED, PERMISSIONS_REQUEST_CODE)
+        } else {
+            // 이미 권한 있을 때
+            startCamera()
+        }
+    }
+
+    // all => PERMISSIONS_REQUIRED 배열의 원소가 모두 조건문을 만족하면 true, 아니면 false 반환
+    fun hasPermissions(context: Context) = PERMISSIONS_REQUIRED.all {
+        ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+    }
+
+    // 권한 요청 콜백 함수
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        // onCreate() 메서드에서 requestPermissions의 인수로 넣은 PERMISSIONS_REQUEST_CODE와 맞는지 확인
+        if (requestCode == PERMISSIONS_REQUEST_CODE) {  // 권한 수락 시
+            if (PackageManager.PERMISSION_GRANTED == grantResults.firstOrNull()){
+                Toast.makeText(this@MainActivity, "권한 요청이 승인되었습니다.", Toast.LENGTH_LONG).show()
+                startCamera()
+            } else {  // 권한 거부 시
+                Toast.makeText(this@MainActivity, "권한 요청이 거부되었습니다.", Toast.LENGTH_LONG).show()
+                finish()
+            }
+        }
     }
 
     fun startCamera() {
