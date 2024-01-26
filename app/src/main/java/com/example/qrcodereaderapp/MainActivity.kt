@@ -1,6 +1,7 @@
 package com.example.qrcodereaderapp
 
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -25,6 +26,8 @@ class MainActivity : AppCompatActivity() {
     private val PERMISSIONS_REQUEST_CODE = 1
     // 카메라 권한 지정
     private val PERMISSIONS_REQUIRED = arrayOf(android.Manifest.permission.CAMERA)
+    // onDetect() 함수가 여러 번 호출되는 것 방지 기능 변수 선언
+    private var isDetected = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -67,6 +70,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // 다시 사용자의 포커스가 MainActivity로 돌아온다면 다시 QR 코드를 인식할 수 있는 기능
+    // onResume() 함수를 오버라이드해 isDetected를 false로 다시 돌려줌
+    override fun onResume() {
+        super.onResume()
+        isDetected = false
+    }
+
     fun getImageAnalysis() : ImageAnalysis {
         val cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
         val imageAnalysis = ImageAnalysis.Builder().build()
@@ -76,7 +86,12 @@ class MainActivity : AppCompatActivity() {
         imageAnalysis.setAnalyzer(cameraExecutor, QRCodeAnalyzer(object : OnDetectListener {
             override fun onDetect(msg: String) {
                 // onDetect() 함수가 QRCodeAnalyzer에서 불렀을 때 행동 정의
-                Toast.makeText(this@MainActivity, "${msg}", Toast.LENGTH_SHORT).show()
+                if (!isDetected) {  // 한 번도 QR 코드가 인식된 적 없는지 검사(중복 실행 방지)
+                    isDetected = true  // 데이터가 감지되었으므로 true
+                    val intent = Intent(this@MainActivity, ResultActivity::class.java)
+                    intent.putExtra("msg", msg)  // 다음 액티비티로 데이터를 키-쌍의 형태로 넘기기 가능
+                    startActivity(intent)
+                }
             }
         }))
         return imageAnalysis
